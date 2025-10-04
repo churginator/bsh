@@ -128,11 +128,13 @@ int load_tree(tree_t *input) {
     node_t *root;
     int execute_ret;
     token_t parent_type;
+    int dont_care;
 
     root = input->root;
     execute_ret = 0;
     leftmost = next_leaf(root);
     next = NULL;
+    dont_care = 0;
 
     if (leftmost == NULL) {
         // The input has to have at least one node, so we assume root == leftmost
@@ -160,10 +162,15 @@ int load_tree(tree_t *input) {
 
         next = next_leaf((node_t *) leftmost);
 
-        if (next == NULL) {
+        if (next == NULL || dont_care == 1) {
             execute_ret = execute_normal(leftmost);
             kill_leaf(leftmost);
-            break;
+            if (next == NULL) {
+                break;
+            } else {
+                leftmost = next;
+                continue;
+            }
         }
 
         switch (parent_type) {
@@ -189,6 +196,7 @@ int load_tree(tree_t *input) {
         kill_leaf(leftmost);
         leftmost = next;
         if (execute_ret == -1) break;
+        dont_care++;
     }
 
     if (sigprocmask(SIG_UNBLOCK, &blocker, NULL) != 0) {
