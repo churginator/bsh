@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <lexer.h>
+#include <stdio.h>
 
 lexer_t *create_lexer() {
     return safe_malloc(sizeof(lexer_t));
@@ -64,7 +65,13 @@ static node_t *lex_internal(lexer_t *lexer, node_t *parent) {
     do {
         n = next_char(lexer);
         symbol_found = true;
-
+/*
+        if (next_char(lexer) == '\\') {
+            continue;
+        } else {
+            reverse(lexer);
+        }
+*/
         switch (n) {
         case '>':
             next = create_node(parent);

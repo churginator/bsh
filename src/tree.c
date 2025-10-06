@@ -91,6 +91,18 @@ static node_t *traverse(node_t *start) {
     return output;
 }
 
+node_t *next_node(node_t *start) {
+    node_t *curr;
+
+    curr = start;
+    
+    do {
+        curr = traverse(curr);
+    } while (curr != NULL && curr->meta.left == NULL && curr->meta.right == NULL);
+
+    return curr;
+}
+
 leaf_t *next_leaf(node_t *start) {
     node_t *curr;
 

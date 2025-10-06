@@ -124,17 +124,17 @@ static int execute_pipe(leaf_t *cmd) {
 
 int load_tree(tree_t *input) {
     leaf_t *leftmost;
-    leaf_t *next;
+    leaf_t *next_l;
+    node_t *next_n;
     node_t *root;
     int execute_ret;
     token_t parent_type;
-    int dont_care;
 
     root = input->root;
     execute_ret = 0;
     leftmost = next_leaf(root);
-    next = NULL;
-    dont_care = 0;
+    next_l = NULL;
+    next_n = NULL;
 
     if (leftmost == NULL) {
         // The input has to have at least one node, so we assume root == leftmost
@@ -155,32 +155,30 @@ int load_tree(tree_t *input) {
     }
 
     while (leftmost != NULL) {
+        next_n = next_node((node_t *) leftmost);
+        next_l = NULL; // otherwise calling next_leaf() causes a segfault
+
         // if we don't do this, calling next_leaf() may cause a use-after-free
-        if (leftmost->meta.parent != NULL) {
-            parent_type = leftmost->meta.parent->type;
+        if (next_n != NULL) {
+            parent_type = next_n->type;
+            next_l = next_leaf(next_n);
         }
 
-        next = next_leaf((node_t *) leftmost);
-
-        if (next == NULL || dont_care == 1) {
+        // done traversing
+        if (next_l == NULL) {
             execute_ret = execute_normal(leftmost);
             kill_leaf(leftmost);
-            if (next == NULL) {
-                break;
-            } else {
-                leftmost = next;
-                continue;
-            }
+            break;
         }
 
         switch (parent_type) {
         case REDIRECTION:
-            execute_ret = execute_indir(leftmost, next);
-            next = next_leaf((node_t *) leftmost);
+            execute_ret = execute_indir(leftmost, next_l);
+            next_l = next_leaf((node_t *) leftmost);
             break;
         case PIPE:
             leftmost->stdout = execute_pipe(leftmost);
-            next->stdin = leftmost->stdout;
+            next_l->stdin = leftmost->stdout;
             execute_ret = leftmost->stdout;
             break;
         case SEMICOLON:
@@ -194,9 +192,8 @@ int load_tree(tree_t *input) {
         }
 
         kill_leaf(leftmost);
-        leftmost = next;
+        leftmost = next_l;
         if (execute_ret == -1) break;
-        dont_care++;
     }
 
     if (sigprocmask(SIG_UNBLOCK, &blocker, NULL) != 0) {

@@ -10,37 +10,44 @@
 char **path_entries;
 
 char **tokenize(char *input, char **output, char delim) {
-
-	size_t delim_count = 0;
 	size_t output_size;
-	char delim_string[2];
-	char *ret;
+    size_t output_idx;
+	char *previous;
 
-	delim_string[0] = delim;
-	delim_string[1] = '\0';
+    output_idx = 0;
+    output_size = 16 * sizeof(char *);
+    output = safe_realloc(output, output_size);
+    previous = input;
 
 	for (size_t i = 0; input[i] != '\0'; i++) {
-		if (input[i] == delim)
-			delim_count++;
+        if ((output_idx >= output_size)) {
+            output_size += 16 * sizeof(char *);
+            output = safe_realloc(output, output_size);
+        }
+
+        if (input[i] == '\\') {
+            i++;
+            continue;
+        } else if (input[i] == delim) {
+            input[i] = '\0';
+            do {
+                i++;
+            } while (input[i] == delim && input[i] != '\0');
+
+            output[output_idx] = previous;
+            output_idx++;
+            previous = input + i;
+        }
 	}
 
-	output_size = (delim_count + 2) * sizeof(char *);
+    output[output_idx] = previous;
+    output_idx++;
+    output[output_idx] = NULL;
 
-	output = safe_realloc(output, output_size);
-
-	ret = strtok(input, delim_string);
-
-	for (size_t i = 0; ret != NULL; i++) {
-		output[i] = ret;
-		ret = strtok(NULL, delim_string);
-	}
-
-	output[delim_count + 1] = NULL;
 	return output;
 }
 
 char **init_path(char **output) {
-
 	char *path_envvar;
 	size_t path_envvar_size;
 	char *s;
@@ -59,7 +66,6 @@ char **init_path(char **output) {
 }
 
 int handle_path(char *input, char *output, char **paths) {
-
 	if (strchr(input, '/') != NULL) {
 		strcpy(output, input);
 		return 0;
