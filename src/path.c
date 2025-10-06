@@ -15,14 +15,14 @@ char **tokenize(char *input, char **output, char delim) {
 	char *previous;
 
     output_idx = 0;
-    output_size = 16 * sizeof(char *);
-    output = safe_realloc(output, output_size);
+    output_size = 16;
+    output = safe_realloc(output, output_size * sizeof(char *));
     previous = input;
 
 	for (size_t i = 0; input[i] != '\0'; i++) {
-        if ((output_idx >= output_size)) {
-            output_size += 16 * sizeof(char *);
-            output = safe_realloc(output, output_size);
+        if (output_idx >= (output_size - 1)) {
+            output_size += 16;
+            output = safe_realloc(output, output_size * sizeof (char *));
         }
 
         if (input[i] == '\\') {
