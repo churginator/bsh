@@ -76,6 +76,8 @@ inline int kill_leaf(leaf_t *who) {
 static node_t *traverse(node_t *start) {
     node_t *curr, *output;
 
+    if (start == NULL) return NULL;
+
     curr = start;
 
     if (curr->meta.left != NULL) {

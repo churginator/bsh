@@ -9,6 +9,36 @@
 
 char **path_entries;
 
+char *skip_quotes(char *input, size_t *index) {
+	size_t i;
+
+	if (input == NULL) return NULL;
+
+	if (index != NULL) {
+		i = *index;
+	} else {
+		i = 0;
+	}
+
+	if (input[i] == '\'') {
+		do {
+			i++;
+		} while (input[i] != '\0' && input[i] != '\'');
+	} else if (input[i] == '"') {
+		do {
+			i++;
+		} while (input[i] != '\0' && input[i] != '"');
+	}
+
+	input[i] = '\0';
+
+	if (index != NULL) {
+		*index = i;
+	}
+
+	return input;
+}
+
 char **tokenize(char *input, char **output, char delim) {
 	size_t output_size;
     size_t output_idx;
@@ -25,18 +55,22 @@ char **tokenize(char *input, char **output, char delim) {
             output = safe_realloc(output, output_size * sizeof (char *));
         }
 
-        if (input[i] == '\\') {
-            i++;
-            continue;
+        if (input[i] == '"' || input[i] == '\'') {
+			previous = input + i + 1;
+            skip_quotes(input, &i);
         } else if (input[i] == delim) {
             input[i] = '\0';
-            do {
+            while (input[i + 1] == delim && input[i + 1] != '\0') {
                 i++;
-            } while (input[i] == delim && input[i] != '\0');
+            }
 
             output[output_idx] = previous;
             output_idx++;
-            previous = input + i;
+
+			// otherwise, an entry in argv with only a null byte shows up at the end
+            if (input[i+1] != '\0') {
+				previous = input + i + 1;
+			}
         }
 	}
 

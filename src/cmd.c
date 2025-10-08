@@ -156,13 +156,12 @@ int load_tree(tree_t *input) {
 
     while (leftmost != NULL) {
         next_n = next_node((node_t *) leftmost);
-        next_l = NULL; // otherwise calling next_leaf() causes a segfault
 
-        // if we don't do this, calling next_leaf() may cause a use-after-free
         if (next_n != NULL) {
             parent_type = next_n->type;
-            next_l = next_leaf(next_n);
         }
+
+        next_l = next_leaf(next_n);
 
         // done traversing
         if (next_l == NULL) {
