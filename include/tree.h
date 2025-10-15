@@ -36,6 +36,6 @@ int kill_leaf(leaf_t *who);
 node_t *next_node(node_t *start);
 leaf_t *next_leaf(node_t *start);
 tree_t *init_tree(node_t *root);
-void delete_tree(tree_t *who);
+void delete_recursive(node_t *who);
 
 #endif // TREE_H

@@ -121,11 +121,10 @@ leaf_t *next_leaf(node_t *start) {
     return (leaf_t *) curr;
 }
 
-// unused
-void delete_tree(tree_t *who) {
+void delete_recursive(node_t *who) {
     node_t *victim, *next;
 
-    victim = who->root;
+    victim = who;
     while (victim != NULL) {
         if (victim->meta.left != NULL) {
             next = victim->meta.left;
@@ -135,11 +134,13 @@ void delete_tree(tree_t *who) {
             victim->meta.right = NULL;
         } else {
             next = victim->meta.parent;
-            free(victim);
+            if (victim->type == COMMAND) {
+                kill_leaf((leaf_t *) victim);
+            } else {
+                kill_node(victim);
+            }
         }
 
         victim = next;
     }
-
-    free(who);
 }

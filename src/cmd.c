@@ -81,7 +81,7 @@ static int execute_normal(leaf_t *cmd) {
         close(cmd->stderr);
     }
 
-    return 0;
+    return cpid;
 }
 
 static int execute_indir(leaf_t *cmd, leaf_t *file) {
@@ -113,7 +113,7 @@ static int execute_pipe(leaf_t *cmd) {
     cmd->stdout = pipe_ends[1];
     ret = execute_normal(cmd);
 
-    if (ret != 0) {
+    if (ret == -1) {
         close(pipe_ends[0]);
         close(pipe_ends[1]);
         return ret;
@@ -192,7 +192,12 @@ int load_tree(tree_t *input) {
 
         kill_leaf(leftmost);
         leftmost = next_l;
-        if (execute_ret == -1) break;
+
+        if (execute_ret == -1) {
+            kill_leaf(leftmost);
+            delete_recursive(next_n);
+            break;
+        }
     }
 
     if (sigprocmask(SIG_UNBLOCK, &blocker, NULL) != 0) {

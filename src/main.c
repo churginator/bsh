@@ -47,9 +47,9 @@ int main(int argc, char **argv, char **envp)
 
 		in_buf[in_size - 1] = '\0'; // newline begone
 		to_exec = lex(in_buf);
-		if (load_tree(to_exec) == 0) {
-			execute_chain();
-		}
+
+		load_tree(to_exec);
+		execute_chain(); // nothing happens if load_tree() failed
 
 		free(to_exec); // loading the tree should free all the nodes
 	}
