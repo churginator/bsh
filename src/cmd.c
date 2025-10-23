@@ -12,6 +12,7 @@
 #include <tokens.h>
 #include <tree.h>
 #include <path.h>
+#include <builtins.h>
 
 static sigset_t blocker;
 
@@ -34,12 +35,35 @@ int execute_chain() {
     return 0;
 }
 
+static inline int cleanup_fds(leaf_t *cmd) {
+    // don't care about return status of close() right now
+    if (cmd->stdin != 0) {
+        close(cmd->stdin);
+    }
+
+    if (cmd->stdout != 1) {
+        close(cmd->stdout);
+    }
+
+    if (cmd->stderr != 2) {
+        close(cmd->stderr);
+    }
+
+    return 0;
+}
+
 static int execute_normal(leaf_t *cmd) {
     pid_t cpid;
     int sig;
+    int ret;
     char filename[PATH_MAX];
 
     cmd->argv = tokenize(cmd->command, NULL, ' ');
+
+    if (handle_builtins(cmd->argv, &ret)) {
+        cleanup_fds(cmd);
+        return ret;
+    }
 
     if (handle_path(cmd->argv[0], filename, path_entries) == 0) {
         cmd->command = filename;
@@ -68,18 +92,7 @@ static int execute_normal(leaf_t *cmd) {
         error(EXIT_FAILURE, errno, "%s", cmd->argv[0]);
     }
 
-    // don't care about return status of close() right now
-    if (cmd->stdin != 0) {
-        close(cmd->stdin);
-    }
-
-    if (cmd->stdout != 1) {
-        close(cmd->stdout);
-    }
-
-    if (cmd->stderr != 2) {
-        close(cmd->stderr);
-    }
+    cleanup_fds(cmd);
 
     return cpid;
 }
