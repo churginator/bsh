@@ -97,7 +97,7 @@ static int execute_normal(leaf_t *cmd) {
     return cpid;
 }
 
-static int execute_indir(leaf_t *cmd, leaf_t *file) {
+static int execute_redir(leaf_t *cmd, leaf_t *file) {
     int outfd;
 
     outfd = open(file->command, O_CREAT|O_WRONLY, (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH));
@@ -185,8 +185,9 @@ int load_tree(tree_t *input) {
 
         switch (parent_type) {
         case REDIRECTION:
-            execute_ret = execute_indir(leftmost, next_l);
-            next_l = next_leaf((node_t *) leftmost);
+            execute_ret = execute_redir(leftmost, next_l);
+            kill_leaf(next_l);
+            next_l = next_leaf(next_n);
             break;
         case PIPE:
             leftmost->stdout = execute_pipe(leftmost);
