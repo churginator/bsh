@@ -66,7 +66,7 @@ int main(int argc, char **argv, char **envp)
 		to_exec = lex(in_buf);
 
 		load_tree(to_exec);
-		execute_chain(); // nothing happens if load_tree() failed
+		execute_chain(0); // nothing happens if load_tree() failed
 
 		free(to_exec); // loading the tree should free all the nodes
 	}

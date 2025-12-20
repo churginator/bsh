@@ -6,6 +6,7 @@
 #include <linux/limits.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <stdio.h>
 
 #include <bsh.h>
 #include <cmd.h>
@@ -28,11 +29,22 @@ static int dup2_safe(int oldfd, int newfd) {
     return output;
 }
 
-int execute_chain() {
+int execute_chain(pid_t to_watch) {
+    int ret = 0;
+    int wait_ret;
+    pid_t who;
+
     kill(0, SIGCONT);
 
-    while (wait(NULL) > 0);
-    return 0;
+    do {
+        who = wait(&wait_ret);
+        if (who == to_watch) {
+            if (WIFEXITED(wait_ret)) {
+                ret = WEXITSTATUS(wait_ret);
+            }
+        }
+    } while (who > 0);
+    return ret;
 }
 
 static inline int cleanup_fds(leaf_t *cmd) {
@@ -68,7 +80,7 @@ static int execute_normal(leaf_t *cmd) {
     if (handle_path(cmd->argv[0], filename, path_entries) == 0) {
         cmd->command = filename;
     } else {
-        error(EXIT_SUCCESS, 0, "command not found");
+        error(EXIT_SUCCESS, 0, "%s: command not found", cmd->command);
         return -1;
     }
 
@@ -184,6 +196,20 @@ int load_tree(tree_t *input) {
         }
 
         switch (parent_type) {
+        case AND:
+            execute_ret = execute_normal(leftmost);
+            execute_ret = execute_chain(execute_ret);
+            if (execute_ret != 0) {
+                execute_ret = -1;
+            }
+            break;
+        case OR:
+            execute_ret = execute_normal(leftmost);
+            execute_ret = execute_chain(execute_ret);
+            if (execute_ret == 0) {
+                execute_ret = -1;
+            }
+            break;
         case REDIRECTION:
             execute_ret = execute_redir(leftmost, next_l);
             kill_leaf(next_l);
@@ -196,7 +222,7 @@ int load_tree(tree_t *input) {
             break;
         case SEMICOLON:
             execute_ret = execute_normal(leftmost);
-            execute_chain();
+            execute_chain(0);
             break;
         default:
             error(EXIT_SUCCESS, 0, "not implemented");

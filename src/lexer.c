@@ -51,12 +51,15 @@ static inline char *skip_whitespace(char *input) {
 }
 
 // recursive function to parse a line of input
+// quite possibly the worst code i have ever written
 static node_t *lex_internal(lexer_t *lexer, node_t *parent) {
     node_t *output;
     node_t *next;
     char n;
+    char f;
     bool symbol_found;
     bool symbols_exist;
+    bool digraph_found;
 
     output = NULL;
     next = NULL;
@@ -65,29 +68,52 @@ static node_t *lex_internal(lexer_t *lexer, node_t *parent) {
     do {
         n = next_char(lexer);
         symbol_found = true;
-/*
-        if (next_char(lexer) == '\\') {
+        digraph_found = false;
+
+        char e = next_char(lexer);
+        if (e == '\\') {
             continue;
-        } else {
+        } else if (e != '\0') {
             reverse(lexer);
         }
-*/
+
         switch (n) {
+        case '&':
+            f = next_char(lexer);
+            if (f == '&') {
+                digraph_found = true;
+                next = create_node(parent);
+                next->type = AND;
+                break;
+            }
+            if (f != '\0') {
+                reverse(lexer);
+            }
+            next = create_node(parent);
+            next->type = BACKGROUND;
+            break;
+        case '|':
+            f = next_char(lexer);
+            if (f == '|') {
+                digraph_found = true;
+                next = create_node(parent);
+                next->type = OR;
+                break;
+            }
+
+            if (f != '\0') {
+                reverse(lexer);
+            }
+            next = create_node(parent);
+            next->type = PIPE;
+            break;
         case '>':
             next = create_node(parent);
             next->type = REDIRECTION;
             break;
-        case '|':
-            next = create_node(parent);
-            next->type = PIPE;
-            break;
         case ';':
             next = create_node(parent);
             next->type = SEMICOLON;
-            break;
-        case '&':
-            next = create_node(parent);
-            next->type = BACKGROUND;
             break;
         default:
             symbol_found = false;
@@ -96,6 +122,7 @@ static node_t *lex_internal(lexer_t *lexer, node_t *parent) {
 
         // we can safely assume that next is not a nullptr
         if (symbol_found) {
+            size_t extra = 1; // better documentation never
             leaf_t *next_right;
 
             symbols_exist = true;
@@ -106,9 +133,14 @@ static node_t *lex_internal(lexer_t *lexer, node_t *parent) {
                 set_char(lexer, '\0');
             }
 
+            if (digraph_found) {
+                extra++;
+                set_char(lexer, '\0');
+            }
+
             // set the right to what we've already parsed (guaranteed no symbols there), and recursively parse the left side
             next_right = create_leaf(next);
-            next_right->command = skip_whitespace(lexer->program + lexer->current_index + 2);
+            next_right->command = skip_whitespace(lexer->program + lexer->current_index + 1 + extra);
 
             next->meta.right = (node_t *) next_right;
             next->meta.left = lex_internal(lexer, next);
