@@ -70,12 +70,14 @@ static node_t *lex_internal(lexer_t *lexer, node_t *parent) {
         symbol_found = true;
         digraph_found = false;
 
+        /*
         char e = next_char(lexer);
         if (e == '\\') {
             continue;
         } else if (e != '\0') {
             reverse(lexer);
         }
+        */
 
         switch (n) {
         case '&':
@@ -110,6 +112,10 @@ static node_t *lex_internal(lexer_t *lexer, node_t *parent) {
         case '>':
             next = create_node(parent);
             next->type = REDIRECTION;
+            break;
+        case '<':
+            next = create_node(parent);
+            next->type = INDIRECTION;
             break;
         case ';':
             next = create_node(parent);

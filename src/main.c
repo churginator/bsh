@@ -58,7 +58,7 @@ int main(int argc, char **argv, char **envp)
 			if (interactive)
 				putchar('\n');
 			exit(0);
-		} else if (in_size == 1) {
+		} else if (in_size == 1) { // the user just pressed ENTER
 			continue;
 		}
 
@@ -66,7 +66,7 @@ int main(int argc, char **argv, char **envp)
 		to_exec = lex(in_buf);
 
 		load_tree(to_exec);
-		execute_chain(0); // nothing happens if load_tree() failed
+		execute_chain(NOBODY_PID); // nothing happens if load_tree() failed
 
 		free(to_exec); // loading the tree should free all the nodes
 	}

@@ -123,6 +123,20 @@ static int execute_redir(leaf_t *cmd, leaf_t *file) {
     return execute_normal(cmd);
 }
 
+static int execute_indir(leaf_t *cmd, leaf_t *file) {
+    int infd;
+
+    infd = open(file->command, O_RDONLY);
+
+    if (infd == -1) {
+        error(EXIT_SUCCESS, errno, "%s", file->command);
+        return -1;
+    }
+
+    cmd->stdin = infd;
+    return execute_normal(cmd);
+}
+
 static int execute_pipe(leaf_t *cmd) {
     int pipe_ends[2];
     int pipe_ret;
@@ -155,14 +169,17 @@ int load_tree(tree_t *input) {
     int execute_ret;
     token_t parent_type;
 
-    root = input->root;
+    root = input->root; // confusing names yay
     execute_ret = 0;
     leftmost = next_leaf(root);
     next_l = NULL;
     next_n = NULL;
 
     if (leftmost == NULL) {
-        // The input has to have at least one node, so we assume root == leftmost
+        /*
+         * This means the root node has no child nodes
+         * Therefore, we just assume the root node is a leaf node
+        */
         leftmost = (leaf_t *) root;
     }
 
@@ -198,20 +215,33 @@ int load_tree(tree_t *input) {
         switch (parent_type) {
         case AND:
             execute_ret = execute_normal(leftmost);
-            execute_ret = execute_chain(execute_ret);
-            if (execute_ret != 0) {
-                execute_ret = -1;
+            int lret = execute_chain(execute_ret);
+
+            if (lret != 0) {
+                kill_leaf(next_l);
+                next_l = next_leaf(next_n);
             }
             break;
         case OR:
             execute_ret = execute_normal(leftmost);
-            execute_ret = execute_chain(execute_ret);
-            if (execute_ret == 0) {
-                execute_ret = -1;
+            lret = execute_chain(execute_ret);
+
+            if (lret != 0) {
+                execute_ret = execute_normal(next_l);
+                execute_chain(NOBODY_PID);
             }
+
+            kill_leaf(next_l);
+            next_l = next_leaf(next_n);
+
             break;
         case REDIRECTION:
             execute_ret = execute_redir(leftmost, next_l);
+            kill_leaf(next_l);
+            next_l = next_leaf(next_n);
+            break;
+        case INDIRECTION:
+            execute_ret = execute_indir(leftmost, next_l);
             kill_leaf(next_l);
             next_l = next_leaf(next_n);
             break;
@@ -222,7 +252,7 @@ int load_tree(tree_t *input) {
             break;
         case SEMICOLON:
             execute_ret = execute_normal(leftmost);
-            execute_chain(0);
+            execute_chain(NOBODY_PID);
             break;
         default:
             error(EXIT_SUCCESS, 0, "not implemented");

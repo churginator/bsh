@@ -5,6 +5,7 @@ typedef enum {
     NOTHING,
     COMMAND,
     REDIRECTION,
+    INDIRECTION,
     PIPE,
     VARIABLE,
     SEMICOLON,

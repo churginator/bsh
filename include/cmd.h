@@ -3,6 +3,8 @@
 
 #include <tree.h>
 
+#define NOBODY_PID 0
+
 int load_tree(tree_t *input);
 int execute_chain(pid_t to_watch);
 
